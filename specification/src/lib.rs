@@ -138,12 +138,6 @@ impl<T: std::fmt::Debug> SpecificationCompositions<T> {
 
     pub fn reminder_unsatisfied_by(&self, candidate: &T) -> Option<Self> {
         match self {
-            Self::Specification(f) => {
-                if f.is_satisfied_by(candidate) {
-                    return None;
-                }
-                Some(Self::Specification(f.clone()))
-            }
             Self::And(specifications) => {
                 let mut unsatisfied = Vec::new();
                 for specification in specifications {
@@ -198,6 +192,12 @@ impl<T: std::fmt::Debug> SpecificationCompositions<T> {
             }
             Self::True => None,
             Self::False => None,
+            Self::Specification(f) => {
+                if f.is_satisfied_by(candidate) {
+                    return None;
+                }
+                Some(Self::Specification(f.clone()))
+            }
         }
     }
 }
@@ -342,5 +342,33 @@ mod test {
             res,
             Some(SpecificationCompositions::Specification(..))
         ));
+    }
+
+    #[test]
+    #[ignore]
+    fn test_similarity() {
+        let less_than_10_1 = LessThan { value: 10 };
+        let less_than_10_2 = LessThan { value: 10 };
+        let less_than_10_3 = LessThan { value: 10 };
+        let specification_a = format!(
+            "{:?}",
+            less_than_10_1.and(less_than_10_2.and(less_than_10_3))
+        );
+
+        let less_than_10_1 = LessThan { value: 10 };
+        let less_than_10_2 = LessThan { value: 10 };
+        let less_than_10_3 = LessThan { value: 10 };
+        let specification_b = format!(
+            "{:?}",
+            less_than_10_1.and(less_than_10_2).and(less_than_10_3)
+        );
+
+        // This assertion would fail.
+        // Left side: "LessThan10 and ( LessThan10 and LessThan10 )"
+        // Right side: "LessThan10 and LessThan10 and LessThan10"
+        // Logic dictates the two are equivalent, and surely if you write any code to test this, it will pass.
+        // But, they are still constructed differently.
+        // I guess it can be fixed, but I don't think that's a big issue.
+        assert_eq!(specification_a, specification_b);
     }
 }
